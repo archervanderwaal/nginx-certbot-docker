@@ -1,0 +1,16 @@
+versions: '3.1'
+services:
+  nginx:
+    image: nginx
+    ports:
+      - "433:433"
+      - "80:80"
+    volumes:
+      - ./data/nginx:/etc/nginx/conf.d
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./data/certbot/conf:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
