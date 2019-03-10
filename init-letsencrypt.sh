@@ -68,7 +68,7 @@ if [ $staging != "0" ]; then staging_arg="--staging"; fi
 
 # Obtain certificate for specified domains
 docker-compose run --rm --entrypoint "\
-  certbot certonly --webroot \
+  certbot certonly --webroot -w /var/www/certbot \
     $staging_arg \
     $email_arg \
     $domain_args \
