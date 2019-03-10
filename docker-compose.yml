@@ -1,16 +1,17 @@
 versions: '3.1'
 services:
   nginx:
-    image: nginx
+    image: nginx:1.15-alpine
+    restart: unless-stopped
     ports:
       - "433:433"
       - "80:80"
     volumes:
       - ./data/nginx:/etc/nginx/conf.d
       - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
+      - ./data/certbot/www:/var/lib/letsencrypt
   certbot:
     image: certbot/certbot
     volumes:
       - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
+      - ./data/certbot/www:/var/lib/letsencrypt

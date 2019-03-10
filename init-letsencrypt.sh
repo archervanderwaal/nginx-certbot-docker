@@ -1,11 +1,13 @@
 #!/bin/bash
 
+# Read config
 domains=(`awk -F '=' '/domains/ {gsub(/[()]+/,"",$2); print $2}' config.env`)
 email=`awk -F '=' '/email/ {print $2}' config.env`
 data_path=`awk -F '=' '/data_path/ {print $2}' config.env`
 rsa_key_size=`awk -F '=' '/rsa_key_size/ {print $2}' config.env`
 staging=`awk -F '=' '/staging/ {print $2}' config.env`
 
+# Decide whether to renew the certificate
 if [ -d "$data_path" ]; then
   read -p "Existing data found for $domains. Continue and replace existing certificate? (y/N) " decision
   if [ "$decision" != "Y" ] && [ "$decision" != "y" ]; then
@@ -13,7 +15,7 @@ if [ -d "$data_path" ]; then
   fi
 fi
 
-
+# Download recommended TLS parameters
 if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/ssl-dhparams.pem" ]; then
   echo "====> Downloading recommended TLS parameters ..."
   mkdir -p "$data_path/conf"
@@ -22,22 +24,24 @@ if [ ! -e "$data_path/conf/options-ssl-nginx.conf" ] || [ ! -e "$data_path/conf/
   echo
 fi
 
-# 如果nginx启动没有发现证书, 会拒绝启动, 此处创建一个假的证书让NGINX正常启动
-echo "====> Creating dummy certificate for $domains ..."
+# If nginx startup does not find a certificate, it will be refused to start, 
+# and a fake certificate will be created to enable nginx to start properly
+echo "====> Creating dummy certificate for $domains use openssl ..."
 path="/etc/letsencrypt/live/$domains"
 mkdir -p "$data_path/conf/live/$domains"
 docker-compose run --rm --entrypoint "\
-  openssl req -x509 -nodes -newkey rsa:1024 -days 1\
+  openssl req -x509 -nodes -newkey rsa:1024 -days 1 \
     -keyout '$path/privkey.pem' \
     -out '$path/fullchain.pem' \
     -subj '/CN=localhost'" certbot
 echo
 
-
+# Starting nginx
 echo "====> Starting nginx ..."
 docker-compose up --force-recreate -d nginx
 echo
 
+# Deleting dummy certficate
 echo "====> Deleting dummy certificate for $domains ..."
 docker-compose run --rm --entrypoint "\
   rm -Rf /etc/letsencrypt/live/$domains && \
@@ -47,7 +51,7 @@ echo
 
 
 echo "====> Requesting Let's Encrypt certificate for $domains ..."
-#Join $domains to -d args
+# Join $domains to -d args
 domain_args=""
 for domain in "${domains[@]}"; do
   domain_args="$domain_args -d $domain"
@@ -62,8 +66,9 @@ esac
 # Enable staging mode if needed
 if [ $staging != "0" ]; then staging_arg="--staging"; fi
 
+# Obtain certificate for specified domains
 docker-compose run --rm --entrypoint "\
-  certbot certonly --webroot -w /var/www/certbot \
+  certbot certonly --webroot \
     $staging_arg \
     $email_arg \
     $domain_args \
@@ -72,5 +77,6 @@ docker-compose run --rm --entrypoint "\
     --force-renewal" certbot
 echo
 
+# Reloading nginx
 echo "====> Reloading nginx ..."
 docker-compose exec nginx nginx -s reload
