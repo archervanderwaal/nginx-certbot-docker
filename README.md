@@ -26,9 +26,8 @@ After that
 ./init-letsencrypt.sh
 ```
 
-Update your certificates regularly
+> Update your certificates regularly
 
-Use crontab add your cron cask:
 
 ```bash
 0 0 1 * * ${your path}/renew.sh
