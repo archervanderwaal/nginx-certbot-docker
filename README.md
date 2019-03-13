@@ -1,5 +1,6 @@
 # nginx-cert-docker
 
+![](http://pnj34o3wi.bkt.clouddn.com/nginx-certbot-show.png)
 ## Installation
 
 ```bash
